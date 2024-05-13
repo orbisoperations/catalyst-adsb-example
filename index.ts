@@ -74,10 +74,12 @@ export default {
                   );
                  // console.log(data.ac)
                     if (!data.ac) {
+                        console.log("no data found", data)
                         return []
                     }
 
-                    const redacted = data.ac.map(item => {
+                    console.log("org selector", env.ORG_SELECTOR)
+                    const redacted = Array.from(data.ac).map(item => {
                         return Object.assign(item, {flight: org === env.ORG_SELECTOR ? item.flight : "REDACTED"})
 
                     });
