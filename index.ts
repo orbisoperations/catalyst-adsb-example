@@ -6,6 +6,7 @@ import { calculateJwkThumbprint, createRemoteJWKSet, jwtVerify } from 'jose';
 interface Environment {
   RAPID_API_KEY: string;
   CATALYST_JWKS_URL: string;
+  ORG_SELECTOR: string
 }
 
 export default {
@@ -31,7 +32,7 @@ export default {
       // JWT Validation
       const {CATALYST_JWKS_URL} = env;
       const JWKS = createRemoteJWKSet(new URL(CATALYST_JWKS_URL))
-      console.log(`${Array.from(req.headers.entries())}`)
+      //console.log(`${Array.from(req.headers.entries())}`)
       const authHeader = req.headers.get("Authorization")
       const token = authHeader != null ? authHeader.split(" ")[1] : undefined
       let jwtPayload;
@@ -47,9 +48,14 @@ export default {
           console.error(e)
         }
       }
+
+      let org: string  = ""
+      if ("sub" in jwtPayload) {
+          org = jwtPayload.sub.split("/")[0]
+      }
       
       console.log(jwtHeader)
-      console.log(jwtPayload)
+      console.log(jwtPayload, org)
 
       const yoga = createYoga<{
         env: Environment;
@@ -66,8 +72,17 @@ export default {
                       {lat, lon, dist},
                       {rapidApiKey: RAPID_API_KEY}
                   );
+                 // console.log(data.ac)
+                    if (!data.ac) {
+                        return []
+                    }
 
-                  return data.ac || [];
+                    const redacted = data.ac.map(item => {
+                        return Object.assign(item, {flight: org === env.ORG_SELECTOR ? item.flight : "REDACTED"})
+
+                    });
+                    console.log("redacted", redacted)
+                  return redacted
                 },
                 _sdl: () => typeDefs
               }
